@@ -1,0 +1,16 @@
+name,ra,dec
+# Authoritative target positions used by the coord_fwhm_match check.
+# The tool measures the angular offset between these coordinates and the ones the
+# SB actually points at, and passes if it is within one synthesized-beam FWHM.
+#
+# IMPORTANT: the values below were copied from each SB's own comment as a starting
+# point, so they will trivially PASS. Replace them with the true positions from
+# TNS / NED / SIMBAD to make this a real independent check. Lines starting with #
+# and unknown targets are skipped (those fall back to the LLM judge).
+#
+# RA format: 21h03m10.107s   Dec format: +20d45m07.58s  (colons also accepted)
+SN2021bmf,16h33m29.416s,-06d22m47.51s
+SN2024rjw,21h03m10.107s,+20d45m07.58s
+SN2025ulz,15h51m54.201s,+30d54m08.67s
+SN2026gzf,09h59m42.889s,+00d25m06.38s
+SN2026ulz,15h51m54.201s,+30d54m08.67s

@@ -1,0 +1,24 @@
+VERSION; 7;
+
+ SRC-CAT; VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; Uband_Deep_AT2025ulz_LST1_Ep1; Dynamic; 1; 2025-08-23 10:30:06,2099-12-31 23:59:00; 09:05:00-11:15:01, ; 0.0; B; 445.0; 35.0; N; N; w=10.0,p=30.0; LIGO/Virgo/KAGRA event S250818k. Urgent observations needed. Pointing observations are not required.; 
+
+  STD; Slew2FluxCal; 1331+305=3C286; Ku-slew; DUR; 0h 3m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; AttSetUp; 1331+305=3C286; Ku48f3DCB; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; ReqSetUp; 1331+305=3C286; Ku48f3DCB; DUR; 0h 0m 30s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; FluxCalLoop; 7; N; ;
+    STD; ; 1331+305=3C286; Ku48f3DCB; DUR; 0h 1m 10s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,; ;
+  LOOP-END;
+  LOOP-START; PhaseCalSlew; 4; N; ;
+    STD; ; J1602+3326; Ku48f3DCB; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-END;
+  LOOP-START; PaseCal2Target; 24; Y; ;
+    STD; ; J1602+3326; Ku48f3DCB; DUR; 0h 0m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; ; AT2025ulz; Ku48f3DCB; DUR; 0h 1m 24s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; Ku48f3DCB; DUR; 0h 1m 24s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; Ku48f3DCB; DUR; 0h 1m 24s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; Ku48f3DCB; DUR; 0h 1m 24s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; Ku48f3DCB; DUR; 0h 1m 24s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

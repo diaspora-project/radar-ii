@@ -1,0 +1,22 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; SN2024rjw_Xband_Aconfig_2hr_AItest; Dynamic; 1; 2027-06-25 00:00:00,2027-10-25 23:59:00; 20:30:00-23:45:01, ; 0.0; A; 445.0; 35.0; N; N; w=100.0,p=45.0; SN2024rjw deep continuum imaging X band, target RA 21h03m10.107s Dec +20d45m07.58s, phase calibrator J2106+2135, flux bandpass delay calibrator 3C48, total duration approximately 1h59m, on-source time approximately 85m, resource X32f2A; 
+
+  STD; X-Slew; 0137+331=3C48; X-slew; DUR; 0h 3m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; X-Attn; 0137+331=3C48; X32f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; X-Req; 0137+331=3C48; X32f2A; DUR; 0h 0m 10s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; X-FluxCal-3C48; 9; N; ;
+    STD; X-FluxCal=3C48; 0137+331=3C48; X32f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; X-slew2PhaseCal; J2106+2135; X32f2A; DUR; 0h 3m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; X-PhaseCal2Source; 17; Y; ;
+    STD; X-PhaseCal; J2106+2135; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2024rjw_X_1as; SN2024rjw; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2024rjw_X_1as; SN2024rjw; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2024rjw_X_1as; SN2024rjw; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2024rjw_X_1as; SN2024rjw; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2024rjw_X_1as; SN2024rjw; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

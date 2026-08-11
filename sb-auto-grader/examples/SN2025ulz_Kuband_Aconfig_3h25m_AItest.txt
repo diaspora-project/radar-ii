@@ -1,0 +1,45 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; SN2026ulz_Kuband_Aconfig_3h25m_AItest; Dynamic; 1; 2027-06-25 00:00:00,2027-10-25 23:59:00; 14:10:00-19:10:01, ; 0.0; A; 445.0; 35.0; N; N; Ku; SN2026ulz deep continuum imaging A configuration Ku band target RA 15h51m54.201s Dec +30d54m08.67s phase calibrator J1602+3326 also used for X-band reference pointing flux bandpass delay calibrator 3C286 total duration approximately 3h25m50s, target on-source time approximately 142.5m, resource Ku48f2A, repeated reference pointing included about hourly; 
+
+  STD; Ku-XPointSetup; 1331+305=3C286; X-point; DUR; 0h 6m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Ku-Attn; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  PTG; Ku-RefPoint-3C286; 1331+305=3C286; X-point; DUR; 0h 7m 0s; CCW; N; N; N; N; Y; ;
+  STD; Ku-Req; 1331+305=3C286; Ku48f2A; DUR; 0h 0m 30s; CCW; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-FluxCal-3C286; 3; N; ;
+    STD; Ku-FluxCal=3C286; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; Y; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; Ku-slew2PointCal; J1602+3326; Ku48f2A; DUR; 0h 3m 50s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+  PTG; Ku-RefPoint-NearTarget-1; J1602+3326; X-point; DUR; 0h 3m 30s; ; N; N; N; N; Y; ;
+  STD; Ku-Req-NearTarget-1; J1602+3326; Ku48f2A; DUR; 0h 0m 30s; ; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-PhaseCal2Source-1; 10; Y; ;
+    STD; Ku-PhaseCal; J1602+3326; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 0m 45s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
+  PTG; Ku-RefPoint-NearTarget-2; J1602+3326; X-point; DUR; 0h 3m 30s; ; N; N; N; N; Y; ;
+  STD; Ku-Req-NearTarget-2; J1602+3326; Ku48f2A; DUR; 0h 0m 30s; ; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-PhaseCal2Source-2; 10; Y; ;
+    STD; Ku-PhaseCal; J1602+3326; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 0m 45s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
+  PTG; Ku-RefPoint-NearTarget-3; J1602+3326; X-point; DUR; 0h 3m 30s; ; N; N; N; N; Y; ;
+  STD; Ku-Req-NearTarget-3; J1602+3326; Ku48f2A; DUR; 0h 0m 30s; ; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-PhaseCal2Source-3; 10; Y; ;
+    STD; Ku-PhaseCal; J1602+3326; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026ulz_Ku_1as; SN2026ulz; Ku48f2A; DUR; 0h 0m 45s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

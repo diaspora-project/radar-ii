@@ -1,0 +1,22 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; SN2026gzf_Cband_Aconfig_1hr_AItest; Dynamic; 1; 2027-06-25 00:00:00,2027-10-25 23:59:00; 09:15:00-13:00:01, ; 0.0; A; 445.0; 35.0; N; N; C; SN2026gzf deep continuum imaging A configuration C band target RA 09h59m42.889s Dec +00d25m06.38s phase calibrator J1007-0207 flux bandpass delay calibrator 3C286 total duration approximately 0h59m, on-source time approximately 35m, resource C32f2Amixalt-blank; 
+
+  STD; C-Slew; 1331+305=3C286; C-slew; DUR; 0h 3m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; C-Attn; 1331+305=3C286; C32f2Amixalt-blank; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; C-Req; 1331+305=3C286; C32f2Amixalt-blank; DUR; 0h 0m 10s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; C-FluxCal-3C286; 9; N; ;
+    STD; C-FluxCal=3C286; 1331+305=3C286; C32f2Amixalt-blank; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; C-slew2PhaseCal; J1007-0207; C32f2Amixalt-blank; DUR; 0h 3m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; C-PhaseCal2Source; 7; Y; ;
+    STD; C-PhaseCal; J1007-0207; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2026gzf_C_1as; SN2026gzf; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_C_1as; SN2026gzf; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_C_1as; SN2026gzf; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_C_1as; SN2026gzf; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_C_1as; SN2026gzf; C32f2Amixalt-blank; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

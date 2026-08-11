@@ -1,0 +1,22 @@
+VERSION; 7;
+
+ SRC-CAT; VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; SN2026gzf_LST1; Dynamic; 1; 2026-03-24 20:30:40,2099-12-31 23:59:00; 07:50:00-12:00:01, ; 0.0; A; 445.0; 35.0; N; N; w=100.0,p=45.0; This is a Ic-BL at 152 Mpc. Meets our trigger criteria. Please see https://www.wis-tns.org/object/2026gzf; 
+
+  STD; C-Slew; 1331+305=3C286; C-slew; DUR; 0h 3m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Attn; 1331+305=3C286; C32f2Amixalt; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Req; 1331+305=3C286; C32f2Amixalt; DUR; 0h 0m 10s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; FluxCal-3C286; 9; N; ;
+    STD; FluxCal=3C286; 1331+305=3C286; C32f2Amixalt; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,; ;
+  LOOP-END;
+  STD; slew2PhaseCal; J1007-0207; C32f2Amixalt; DUR; 0h 3m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; PhaseCal2Source; 7; Y; ;
+    STD; ; J1007-0207; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2026gzf_1as; SN2026gzf; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_1as; SN2026gzf; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_1as; SN2026gzf; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_1as; SN2026gzf; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2026gzf_1as; SN2026gzf; C32f2Amixalt; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

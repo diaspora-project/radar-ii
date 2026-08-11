@@ -1,0 +1,141 @@
+# VLA Scheduling-Block (SB) scoring rubric
+# =========================================
+# Scoring convention (matches the manual notes): +1 per satisfied rule, -1 per violation.
+# Each check has a `tier`:
+#   mechanical -> fully auto-checked from the SB file
+#   computed -> auto-computed but advisory (thresholds are guidance, not hard fails)
+#   needs_external_data-> cannot be verified from the file alone; the scorer FLAGS it for a human
+# The reference tables (hardware allowlist, config schedule, cycle times, ...) live in
+# score_sb.py under the "REFERENCE DATA" section and are easy to edit there.
+
+meta:
+  name: VLA SB scoring rubric
+  scoring: "+1 per satisfied rule, -1 per violation; flagged checks need manual review"
+  sources: "RADAR ChatGPT SB creation investigation.docx; Manual Scoring example_ Notes.docx"
+
+checks:
+  - id: version_present
+    title: "VERSION; 7; present as first non-blank line"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 0; RADAR sec7"
+
+  - id: src_cat_present
+    title: "SRC-CAT line present"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 1; RADAR sec7"
+
+  - id: hdwr_cat_present
+    title: "HDWR-CAT line present"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 2"
+
+  - id: loop_closure
+    title: "Every LOOP-START has a matching LOOP-END"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 8; RADAR sec7"
+
+  - id: dummy_setup_first
+    title: "First scan is a dummy/setup scan (SetAtnGain intent)"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec7 template"
+
+  - id: hardware_in_allowlist
+    title: "Every hardware resource is a valid catalog name"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 5,7; RADAR sec2 (the Ku48f2 vs Ku48f2A bug)"
+
+  - id: intents_valid
+    title: "Every scan intent is from the allowed set"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 6"
+
+  - id: flux_present
+    title: "A flux-density calibrator scan (CalFlux) is present"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec6, sec7 template"
+
+  - id: bandpass_present
+    title: "A bandpass calibrator scan (CalBP) is present"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec6, sec7 template"
+
+  - id: flux_cal_standard
+    title: "Flux calibrator is a standard source (3C286/3C48/3C147)"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 4; RADAR sec6"
+
+  - id: phase_present
+    title: "A phase/gain calibrator scan (CalGain) is present"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec5, sec7 template"
+
+  - id: target_present
+    title: "A target scan (ObsTgt) is present"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec1, sec7 template"
+
+  - id: one_phase_per_target_loop
+    title: "Each target loop contains exactly one phase-cal line"
+    tier: mechanical
+    points: 1
+    source: "Notes comment 10"
+
+  - id: template_order
+    title: "Scan order is setup -> flux/bandpass -> phase -> target"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec7 template truths"
+
+  - id: config_matches_date
+    title: "Array configuration matches the observing-date window"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec4 config schedule"
+
+  - id: highfreq_refpointing
+    title: "High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)"
+    tier: mechanical
+    points: 1
+    source: "RADAR sec1 high-frequency table"
+
+  - id: cycle_time
+    title: "Phase-target cycle time within NRAO guidance for band/config"
+    tier: computed
+    points: 1
+    source: "RADAR sec8 cycle-time table"
+
+  - id: phase_cal_visible
+    title: "Phase calibrator observable in chosen band and array config"
+    tier: needs_external_data
+    points: 1
+    source: "Notes comment 9; RADAR sec5"
+
+  - id: phase_cal_separation
+    title: "Phase-cal angular separation within band-dependent threshold"
+    tier: needs_external_data
+    points: 1
+    source: "RADAR sec5 separation table"
+
+  - id: coord_fwhm_match
+    title: "Target/cal RA/Dec within synthesized-beam FWHM of nominal position"
+    tier: needs_external_data
+    points: 1
+    source: "RADAR Tab1; sec1 truth table"
+
+  - id: sensitivity_depth
+    title: "On-source time reaches requested sigma depth (Exposure Calculator)"
+    tier: needs_external_data
+    points: 1
+    source: "RADAR Tab1; sec1"

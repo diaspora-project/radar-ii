@@ -1,0 +1,155 @@
+(verifying external checks against ground truth: SN2021bmf_S,X,Ku_ground.optSB)
+==============================================================================
+SB: SN2021bmf_SXKu_Aconfig_2hr_AItest.txt
+    config A, start 2027-06-25, band Ku/S/X
+    source: AUTO=code  CALC=computed  CATALOG=targets.csv  GROUND=ground-truth  LLM=model  MANUAL=needs human
+------------------------------------------------------------------------------
+  AUTO    [PASS]  +1  VERSION; 7; present as first non-blank line  -- VERSION; 7;
+  AUTO    [PASS]  +1  SRC-CAT line present
+  AUTO    [PASS]  +1  HDWR-CAT line present
+  AUTO    [PASS]  +1  Every LOOP-START has a matching LOOP-END  -- 6 loops closed
+  AUTO    [PASS]  +1  First scan is a dummy/setup scan (SetAtnGain intent)  -- first scan 'S-Slew'
+  AUTO    [PASS]  +1  Every hardware resource is a valid catalog name  -- all resources valid
+  AUTO    [PASS]  +1  Every scan intent is from the allowed set
+  AUTO    [PASS]  +1  A flux-density calibrator scan (CalFlux) is present
+  AUTO    [PASS]  +1  A bandpass calibrator scan (CalBP) is present
+  AUTO    [PASS]  +1  Flux calibrator is a standard source (3C286/3C48/3C147)  -- 1331+305=3C286
+  AUTO    [PASS]  +1  A phase/gain calibrator scan (CalGain) is present
+  AUTO    [PASS]  +1  A target scan (ObsTgt) is present
+  AUTO    [PASS]  +1  Each target loop contains exactly one phase-cal line  -- 3 target loop(s), 1 phase line each
+  AUTO    [PASS]  +1  Scan order is setup -> flux/bandpass -> phase -> target  -- setup -> flux -> phase -> target
+  AUTO    [PASS]  +1  Array configuration matches the observing-date window  -- 2027-06-25 -> A
+  AUTO    [PASS]  +1  High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)  -- reference pointing present (Ku)
+  CALC    [PASS]  +1  Phase-target cycle time within NRAO guidance for band/config  -- S-PhaseCal2Source: 6.0m loop vs 15m rec; X-PhaseCal2Source: 6.0m loop vs 8m rec; Ku-PhaseCal2Source: 5.0m loop vs 6m rec
+  LLM     [PASS]  +1  Phase calibrator observable in chosen band and array config  -- J1644-0743 and J1628-1415 are standard VLA calibrators observable in S/X/Ku at this southern declination in A-config.
+  LLM     [PASS]  +1  Phase-cal angular separation within band-dependent threshold  -- J1644-0743 (~16h44m,-07d43m) ~3.4 deg from target; passes S/X. J1628-1415 used only for Ku pointing reference.
+  CATALOG [PASS]  +1  Target/cal RA/Dec within synthesized-beam FWHM of nominal position  -- SN2021bmf: offset 0.000" <= beam 0.13"
+  GROUND  [FAIL]  -1  On-source time reaches requested sigma depth (Exposure Calculator)  -- on-source 51.0m < ground 62.3m by >10% -> below intended depth
+------------------------------------------------------------------------------
+  SCORE: +19   (20 pass, 1 fail, 0 flagged for manual review)
+==============================================================================
+
+(verifying external checks against ground truth: SN2024rjw_Xband_ground.optSB)
+==============================================================================
+SB: SN2024rjw_Xband_Aconfig_2hr_AItest.txt
+    config A, start 2027-06-25, band X
+    source: AUTO=code  CALC=computed  CATALOG=targets.csv  GROUND=ground-truth  LLM=model  MANUAL=needs human
+------------------------------------------------------------------------------
+  AUTO    [PASS]  +1  VERSION; 7; present as first non-blank line  -- VERSION; 7;
+  AUTO    [PASS]  +1  SRC-CAT line present
+  AUTO    [PASS]  +1  HDWR-CAT line present
+  AUTO    [PASS]  +1  Every LOOP-START has a matching LOOP-END  -- 2 loops closed
+  AUTO    [PASS]  +1  First scan is a dummy/setup scan (SetAtnGain intent)  -- first scan 'X-Slew'
+  AUTO    [PASS]  +1  Every hardware resource is a valid catalog name  -- all resources valid
+  AUTO    [PASS]  +1  Every scan intent is from the allowed set
+  AUTO    [PASS]  +1  A flux-density calibrator scan (CalFlux) is present
+  AUTO    [PASS]  +1  A bandpass calibrator scan (CalBP) is present
+  AUTO    [PASS]  +1  Flux calibrator is a standard source (3C286/3C48/3C147)  -- 0137+331=3C48
+  AUTO    [PASS]  +1  A phase/gain calibrator scan (CalGain) is present
+  AUTO    [PASS]  +1  A target scan (ObsTgt) is present
+  AUTO    [PASS]  +1  Each target loop contains exactly one phase-cal line  -- 1 target loop(s), 1 phase line each
+  AUTO    [PASS]  +1  Scan order is setup -> flux/bandpass -> phase -> target  -- setup -> flux -> phase -> target
+  AUTO    [PASS]  +1  Array configuration matches the observing-date window  -- 2027-06-25 -> A
+  AUTO    [PASS]  +1  High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)  -- not a high-frequency SB
+  CALC    [PASS]  +1  Phase-target cycle time within NRAO guidance for band/config  -- X-PhaseCal2Source: 6.0m loop vs 8m rec
+  LLM     [PASS]  +1  Phase calibrator observable in chosen band and array config  -- J2106+2135 is a standard VLA calibrator, observable at X band in A configuration.
+  LLM     [PASS]  +1  Phase-cal angular separation within band-dependent threshold  -- Target 21h03m/+20d45m vs cal 21h06m/+21d35m; separation ~1.0 deg, well under 7 deg X-band threshold.
+  CATALOG [PASS]  +1  Target/cal RA/Dec within synthesized-beam FWHM of nominal position  -- SN2024rjw: offset 0.000" <= beam 0.2"
+  GROUND  [PASS]  +1  On-source time reaches requested sigma depth (Exposure Calculator)  -- on-source 85.0m >= ground 85.0m -> reaches intended depth
+------------------------------------------------------------------------------
+  SCORE: +21   (21 pass, 0 fail, 0 flagged for manual review)
+==============================================================================
+
+(verifying external checks against ground truth: SN2025ulz_Kuband_ground.optSB)
+==============================================================================
+SB: SN2025ulz_Kuband_Aconfig_3h25m_AItest.txt
+    config A, start 2027-06-25, band Ku
+    source: AUTO=code  CALC=computed  CATALOG=targets.csv  GROUND=ground-truth  LLM=model  MANUAL=needs human
+------------------------------------------------------------------------------
+  AUTO    [PASS]  +1  VERSION; 7; present as first non-blank line  -- VERSION; 7;
+  AUTO    [PASS]  +1  SRC-CAT line present
+  AUTO    [PASS]  +1  HDWR-CAT line present
+  AUTO    [PASS]  +1  Every LOOP-START has a matching LOOP-END  -- 4 loops closed
+  AUTO    [PASS]  +1  First scan is a dummy/setup scan (SetAtnGain intent)  -- first scan 'Ku-XPointSetup'
+  AUTO    [PASS]  +1  Every hardware resource is a valid catalog name  -- all resources valid
+  AUTO    [PASS]  +1  Every scan intent is from the allowed set
+  AUTO    [PASS]  +1  A flux-density calibrator scan (CalFlux) is present
+  AUTO    [PASS]  +1  A bandpass calibrator scan (CalBP) is present
+  AUTO    [PASS]  +1  Flux calibrator is a standard source (3C286/3C48/3C147)  -- 1331+305=3C286
+  AUTO    [PASS]  +1  A phase/gain calibrator scan (CalGain) is present
+  AUTO    [PASS]  +1  A target scan (ObsTgt) is present
+  AUTO    [PASS]  +1  Each target loop contains exactly one phase-cal line  -- 3 target loop(s), 1 phase line each
+  AUTO    [PASS]  +1  Scan order is setup -> flux/bandpass -> phase -> target  -- setup -> flux -> phase -> target
+  AUTO    [PASS]  +1  Array configuration matches the observing-date window  -- 2027-06-25 -> A
+  AUTO    [PASS]  +1  High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)  -- reference pointing present (Ku)
+  CALC    [PASS]  +1  Phase-target cycle time within NRAO guidance for band/config  -- Ku-PhaseCal2Source-1: 5.8m loop vs 6m rec; Ku-PhaseCal2Source-2: 5.8m loop vs 6m rec; Ku-PhaseCal2Source-3: 5.8m loop vs 6m rec
+  GROUND  [PASS]  +1  Phase calibrator observable in chosen band and array config  -- phase cal ['J1602+3326'] matches ground truth -> known-valid
+  LLM     [PASS]  +1  Phase-cal angular separation within band-dependent threshold  -- Target ~15h51.9m/+30.9d, cal 16h02.4m/+33.4d; separation ~3.0 deg, borderline PASS for Ku.
+  CATALOG [PASS]  +1  Target/cal RA/Dec within synthesized-beam FWHM of nominal position  -- SN2026ulz: offset 0.000" <= beam 0.13"
+  GROUND  [FAIL]  -1  On-source time reaches requested sigma depth (Exposure Calculator)  -- on-source 142.5m < ground 168.0m by >10% -> below intended depth
+------------------------------------------------------------------------------
+  SCORE: +19   (20 pass, 1 fail, 0 flagged for manual review)
+==============================================================================
+
+(verifying external checks against ground truth: SN2025ulz_Kuband_ground.optSB)
+==============================================================================
+SB: SN2025ulz_Kuband_Aconfig_3h25m_noRefPoint_AItest.txt
+    config A, start 2027-06-25, band Ku
+    source: AUTO=code  CALC=computed  CATALOG=targets.csv  GROUND=ground-truth  LLM=model  MANUAL=needs human
+------------------------------------------------------------------------------
+  AUTO    [PASS]  +1  VERSION; 7; present as first non-blank line  -- VERSION; 7;
+  AUTO    [PASS]  +1  SRC-CAT line present
+  AUTO    [PASS]  +1  HDWR-CAT line present
+  AUTO    [PASS]  +1  Every LOOP-START has a matching LOOP-END  -- 2 loops closed
+  AUTO    [PASS]  +1  First scan is a dummy/setup scan (SetAtnGain intent)  -- first scan 'Ku-Slew'
+  AUTO    [PASS]  +1  Every hardware resource is a valid catalog name  -- all resources valid
+  AUTO    [PASS]  +1  Every scan intent is from the allowed set
+  AUTO    [PASS]  +1  A flux-density calibrator scan (CalFlux) is present
+  AUTO    [PASS]  +1  A bandpass calibrator scan (CalBP) is present
+  AUTO    [PASS]  +1  Flux calibrator is a standard source (3C286/3C48/3C147)  -- 1331+305=3C286
+  AUTO    [PASS]  +1  A phase/gain calibrator scan (CalGain) is present
+  AUTO    [PASS]  +1  A target scan (ObsTgt) is present
+  AUTO    [PASS]  +1  Each target loop contains exactly one phase-cal line  -- 1 target loop(s), 1 phase line each
+  AUTO    [PASS]  +1  Scan order is setup -> flux/bandpass -> phase -> target  -- setup -> flux -> phase -> target
+  AUTO    [PASS]  +1  Array configuration matches the observing-date window  -- 2027-06-25 -> A
+  AUTO    [WAIV]      High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)  -- no ref pointing, but waived in SB comment
+  CALC    [PASS]  +1  Phase-target cycle time within NRAO guidance for band/config  -- Ku-PhaseCal2Source-Main: 6.0m loop vs 6m rec
+  GROUND  [PASS]  +1  Phase calibrator observable in chosen band and array config  -- phase cal ['J1602+3326'] matches ground truth -> known-valid
+  GROUND  [PASS]  +1  Phase-cal angular separation within band-dependent threshold  -- same phase cal & target as ground -> separation known-good
+  CATALOG [PASS]  +1  Target/cal RA/Dec within synthesized-beam FWHM of nominal position  -- SN2025ulz: offset 0.000" <= beam 0.13"
+  GROUND  [PASS]  +1  On-source time reaches requested sigma depth (Exposure Calculator)  -- on-source 155.0m within 10% of ground 168.0m -> reaches intended depth
+------------------------------------------------------------------------------
+  SCORE: +20   (20 pass, 0 fail, 0 flagged for manual review)
+==============================================================================
+
+(verifying external checks against ground truth: SN2026gzf_Cband_ground.optSB)
+==============================================================================
+SB: SN2026gzf_Cband_Aconfig_1hr_AItest.txt
+    config A, start 2027-06-25, band C
+    source: AUTO=code  CALC=computed  CATALOG=targets.csv  GROUND=ground-truth  LLM=model  MANUAL=needs human
+------------------------------------------------------------------------------
+  AUTO    [PASS]  +1  VERSION; 7; present as first non-blank line  -- VERSION; 7;
+  AUTO    [PASS]  +1  SRC-CAT line present
+  AUTO    [PASS]  +1  HDWR-CAT line present
+  AUTO    [PASS]  +1  Every LOOP-START has a matching LOOP-END  -- 2 loops closed
+  AUTO    [PASS]  +1  First scan is a dummy/setup scan (SetAtnGain intent)  -- first scan 'C-Slew'
+  AUTO    [PASS]  +1  Every hardware resource is a valid catalog name  -- all resources valid
+  AUTO    [PASS]  +1  Every scan intent is from the allowed set
+  AUTO    [PASS]  +1  A flux-density calibrator scan (CalFlux) is present
+  AUTO    [PASS]  +1  A bandpass calibrator scan (CalBP) is present
+  AUTO    [PASS]  +1  Flux calibrator is a standard source (3C286/3C48/3C147)  -- 1331+305=3C286
+  AUTO    [PASS]  +1  A phase/gain calibrator scan (CalGain) is present
+  AUTO    [PASS]  +1  A target scan (ObsTgt) is present
+  AUTO    [PASS]  +1  Each target loop contains exactly one phase-cal line  -- 1 target loop(s), 1 phase line each
+  AUTO    [PASS]  +1  Scan order is setup -> flux/bandpass -> phase -> target  -- setup -> flux -> phase -> target
+  AUTO    [PASS]  +1  Array configuration matches the observing-date window  -- 2027-06-25 -> A
+  AUTO    [PASS]  +1  High-freq SB (Ku/K/Ka/Q) has X-band reference pointing (or a waiver)  -- not a high-frequency SB
+  CALC    [PASS]  +1  Phase-target cycle time within NRAO guidance for band/config  -- C-PhaseCal2Source: 6.0m loop vs 8m rec
+  GROUND  [PASS]  +1  Phase calibrator observable in chosen band and array config  -- phase cal ['J1007-0207'] matches ground truth -> known-valid
+  GROUND  [PASS]  +1  Phase-cal angular separation within band-dependent threshold  -- same phase cal & target as ground -> separation known-good
+  CATALOG [PASS]  +1  Target/cal RA/Dec within synthesized-beam FWHM of nominal position  -- SN2026gzf: offset 0.000" <= beam 0.33"
+  GROUND  [PASS]  +1  On-source time reaches requested sigma depth (Exposure Calculator)  -- on-source 35.0m >= ground 35.0m -> reaches intended depth
+------------------------------------------------------------------------------
+  SCORE: +21   (21 pass, 0 fail, 0 flagged for manual review)
+==============================================================================
+

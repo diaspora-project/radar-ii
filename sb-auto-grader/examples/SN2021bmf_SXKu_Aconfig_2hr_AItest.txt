@@ -1,0 +1,57 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; SN2021bmf_SXKu_Aconfig_2hr_AItest; Dynamic; 1; 2027-06-25 00:00:00,2027-10-25 23:59:00; 14:20:00-17:45:01, ; 0.0; A; 445.0; 35.0; N; N; w=100.0,p=45.0; SN2021bmf multi-band deep continuum imaging covering S X and Ku bands, target RA 16h33m29.416s Dec -06d22m47.51s, phase calibrator J1644-0743, Ku reference pointing calibrator J1628-1415, flux bandpass delay calibrator 3C286, total duration approximately 2h00m, on-source time approximately S=15m X=20m Ku=16m; 
+
+  STD; S-Slew; 1331+305=3C286; S-slew; DUR; 0h 8m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; S-Attn; 1331+305=3C286; S16f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; S-Req; 1331+305=3C286; S16f2A; DUR; 0h 0m 10s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; S-FluxCal-3C286; 5; N; ;
+    STD; S-FluxCal=3C286; 1331+305=3C286; S16f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; S-slew2PhaseCal; J1644-0743; S16f2A; DUR; 0h 3m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; S-PhaseCal2Source; 3; Y; ;
+    STD; S-PhaseCal; J1644-0743; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2021bmf_S_1as; SN2021bmf; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_S_1as; SN2021bmf; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_S_1as; SN2021bmf; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_S_1as; SN2021bmf; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_S_1as; SN2021bmf; S16f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
+
+  STD; X-Slew; 1331+305=3C286; X-slew; DUR; 0h 3m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; X-Attn; 1331+305=3C286; X32f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; X-Req; 1331+305=3C286; X32f2A; DUR; 0h 0m 10s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; X-FluxCal-3C286; 5; N; ;
+    STD; X-FluxCal=3C286; 1331+305=3C286; X32f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; X-slew2PhaseCal; J1644-0743; X32f2A; DUR; 0h 3m 50s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; X-PhaseCal2Source; 4; Y; ;
+    STD; X-PhaseCal; J1644-0743; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2021bmf_X_1as; SN2021bmf; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_X_1as; SN2021bmf; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_X_1as; SN2021bmf; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_X_1as; SN2021bmf; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_X_1as; SN2021bmf; X32f2A; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
+
+  STD; Ku-XPointSetup; 1331+305=3C286; X-point; DUR; 0h 6m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Ku-Attn; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  PTG; Ku-RefPoint-3C286; 1331+305=3C286; X-point; DUR; 0h 7m 0s; CCW; N; N; N; N; Y; ;
+  STD; Ku-Req; 1331+305=3C286; Ku48f2A; DUR; 0h 0m 30s; CCW; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-FluxCal-3C286; 3; N; ;
+    STD; Ku-FluxCal=3C286; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; Y; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; Ku-slew2PointCal; J1628-1415; Ku48f2A; DUR; 0h 3m 50s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+  PTG; Ku-RefPoint-NearTarget; J1628-1415; X-point; DUR; 0h 3m 30s; ; N; N; N; N; Y; ;
+  STD; Ku-Req-NearTarget; J1628-1415; Ku48f2A; DUR; 0h 0m 30s; ; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Ku-slew2PhaseCal; J1644-0743; Ku48f2A; DUR; 0h 2m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; Ku-PhaseCal2Source; 4; Y; ;
+    STD; Ku-PhaseCal; J1644-0743; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2021bmf_Ku_1as; SN2021bmf; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_Ku_1as; SN2021bmf; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_Ku_1as; SN2021bmf; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2021bmf_Ku_1as; SN2021bmf; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

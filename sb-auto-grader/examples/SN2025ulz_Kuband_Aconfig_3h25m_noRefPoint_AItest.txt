@@ -1,0 +1,22 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults, [Delete and add comma-separated list of custom resource catalogs here, eg: NRAO Defaults, My Catalog, etc];
+
+SCHED-BLOCK; SN2025ulz_Kuband_Aconfig_3h25m_noRefPoint_AItest; Dynamic; 1; 2027-06-25 00:00:00,2027-10-25 23:59:00; 14:10:00-19:10:01, ; 0.0; A; 445.0; 35.0; N; N; Ku; SN2025ulz Ku-band continuum imaging A configuration, target RA 15h51m54.201s Dec +30d54m08.67s, phase calibrator J1602+3326, flux bandpass delay calibrator 3C286, total duration approximately 3h25m, target on-source time approximately 155m, resource Ku48f2A, no reference pointing included by request, one long phase-target loop used for the main observation; 
+
+  STD; Ku-Slew; 1331+305=3C286; Ku-slew; DUR; 0h 10m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Ku-Attn; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Ku-Req; 1331+305=3C286; Ku48f2A; DUR; 0h 0m 30s; CCW; Y; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; Ku-FluxCal-3C286; 3; N; ;
+    STD; Ku-FluxCal=3C286; 1331+305=3C286; Ku48f2A; DUR; 0h 1m 0s; CCW; Y; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  STD; Ku-slew2PhaseCal; J1602+3326; Ku48f2A; DUR; 0h 4m 30s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-START; Ku-PhaseCal2Source-Main; 31; Y; ;
+    STD; Ku-PhaseCal; J1602+3326; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; CalGain,; ;
+    STD; SN2025ulz_Ku_1as; SN2025ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2025ulz_Ku_1as; SN2025ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2025ulz_Ku_1as; SN2025ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2025ulz_Ku_1as; SN2025ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; SN2025ulz_Ku_1as; SN2025ulz; Ku48f2A; DUR; 0h 1m 0s; ; Y; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
