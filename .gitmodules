@@ -1,0 +1,3 @@
+[submodule "radio-module"]
+	path = radio-module
+	url = https://github.com/hategan/MMA_RadioWave
