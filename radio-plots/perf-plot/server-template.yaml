@@ -1,0 +1,97 @@
+cluster_id: 'mma-cluster-01'
+
+# 0  - whatever replies in 10 seconds
+# >0 - if number of sites is known
+expected_site_count: 1
+
+mcmc:
+    flux_model: 'afterglowpy'
+
+    nwalkers: 32
+    niters: 25
+    burnin: 5
+    threads: 1
+
+    # random_seed: 12345
+    random_seed: 981721
+
+    # Parameters can have two types of values:
+    #   1. if known: sharp value (e.g., Z: 0.00980)
+    #   2. if not known: a range [lower_bound, upper_bound] (e.g., Z: [0.001, 8])
+    # otherwise the value [lower_bound
+    #Z: [0.001, 8.0]
+    z: 0.00980
+    # Dingo 90% CI
+    # DL_range: [18.532, 45.399]
+    # Dingo 68% CI
+    #DL: [24.079, 43.153]
+    DL: 40
+
+    # 68 % CI
+    thetaObs: [ 0.401, 1.073 ]
+
+    # Values taken from paper: A thousand days after the merger: Continued X-ray emission from GW170817
+    # logEpsilon_e log10 fraction of energy given to the electrons
+    # logEpsilon_e: [-5, -0.5]
+    logEpsilon_e: -2.0
+
+    # logEpsilon_b log10 fraction of energy given to the B feild
+    # logEpsilon_B: [-5, -0.5]
+    logEpsilon_B: -3.7
+
+    # thetaCore is observing angle in radians (0, 10 deg)
+    # thetaCore: [0,.1745]
+    thetaCore: 0.088
+
+    # thetaWing: [ .1745,.7854 ]
+    thetaWing: 0.6
+    # P the electron distribution index
+    # p: [ 2.01,2.5 ]
+    p: 2.139
+
+    #logE0 is log10 central energy of the jet
+    logE0: [ 48, 54 ]
+
+    #logn0 is log10 ism density (1/cm^3)
+    logn0: [ -5, 2 ]
+
+
+    #whether to include the upper limits on the LC plot (they are never included in the fit)
+    include_upper_limits_on_lc: True
+
+    #exclude data for which the time, RA, and Dec are not included?
+    exclude_time_flag: False
+    exclude_ra_dec_flag: False
+    exclude_name_flag: False
+    exclude_uncertainty_flag: False
+
+    #The maximum number of flags an event can have before it is thrown out. (There are 6 flags total).
+    max_acceptable_flagnum: 6
+
+    #this is only used in the event that exclude_name_flag == True. If exclude_name_flag == True, then we discard data for which the target is not specified, or for which the target_name is not a subset of the target returned by the AI GCN reader.
+    target_name: "SSS17a"
+
+    #exclude data which reports a different target than the one named?
+    # exclude_wrong_name: False
+    name_of_source: "SSS17a"
+    GPS_time_of_GW: 123456789
+    ra: 13h09m48.085s
+    dec: -23d22m53s
+
+    #whether or not we exclude data outside of the radius
+    exclude_outside_ra_dec_uncertainty: False
+
+    #the radius outside of which we reject
+    arcseconds_uncertainty: 10
+
+    #whether or not to include the truth valueson the corner plots
+    display_truths_on_corner: True
+
+    true_values:
+        logE0: 53.0
+        thetaObs: 0.54
+        logn0: -1.7
+        DL: 40
+
+
+results_dir: 'out'

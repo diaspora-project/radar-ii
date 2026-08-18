@@ -1,0 +1,33 @@
+cluster_id: 'mma-cluster-01'
+max_threads: 16
+logging_dir: 'logs'
+
+dataset:
+    path: 'Alexander_Margutti_Hajela.csv'
+
+    #exclude data for which the time, RA, and Dec are not included?
+    exclude_time_flag: False
+    exclude_ra_dec_flag: False
+    exclude_name_flag: False
+    exclude_uncertainty_flag: False
+
+    #The maximum number of flags an event can have before it is thrown out. (There are 6 flags total).
+    max_acceptable_flagnum: 6
+
+    #this is only used in the event that exclude_name_flag == True. If exclude_name_flag == True, then
+    #we discard data for which the target is not specified, or for which the target_name is not a subset
+    #of the target returned by the AI GCN reader.
+    target_name: "SSS17a"
+
+    #exclude data which reports a different target than the one named?
+    # exclude_wrong_name: False
+    name_of_source: "SSS17a"
+    GPS_time_of_GW: 123456789
+    ra: 13h09m48.085s
+    dec: -23d22m53s
+
+    #whether or not we exclude data outside of the radius
+    exclude_outside_ra_dec_uncertainty: False
+
+    #the radius outside of which we reject
+    arcseconds_uncertainty: 10
