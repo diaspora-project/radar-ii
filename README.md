@@ -15,6 +15,7 @@ Code for the paper **"Toward Autonomous Radio Follow-up of Multi-messenger Trans
 | [`gcn-ai-parser/`](gcn-ai-parser/) | §2 | `extract_gcn.py` runs the four-prompt extraction chain over GCN Circulars; `evaluate.py` computes P/R/F1 and GCN-level recall (mean ± std over 3 runs) for Table 1 |
 | [`sb-auto-grader/`](sb-auto-grader/) | §4 | VLA SB grader — rules in `rubric.yaml`, engine in `src/score_sb.py`, full pipeline in `src/llm_judge.py`. See its [README](sb-auto-grader/README.md) |
 | [`radio-module/`](radio-module/) | §3 | Updated radio module for RADAR adding parallelism to model evaluation. |
+| [`radio-plots/`](radio-plots/) | §3 | Code to generate the plots for the radio section. |
 
 ```bash
 # parse + score GCN circulars
