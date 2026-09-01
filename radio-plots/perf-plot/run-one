@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+# Runs both server and one site
+
+export PYTHONPATH=`pwd`/../../../src:$PYTHONPATH
+
+python ../../../bin/run_site.py --config site.yaml &
+SPID=`jobs -p 1`
+echo "Site PID is $SPID"
+
+cleanup() {
+    echo Killing $SPID; pkill -e -P $SPID; kill $SPID
+}
+
+trap cleanup SIGINT
+
+sleep 10
+
+python ../../../bin/run_server.py --config server.yaml
+
+
+cleanup

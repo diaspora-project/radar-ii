@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+# Runs a loop that varies the number of walkers from 32 to 1024 in powers of two
+# while also varying the number of threads used by the server from nw/4 to nw*4
+# with "nw" being the number of walkers.
+
+import subprocess
+
+MAX_SAMPLES_PER_THREAD = 6400
+MIN_NIT = 25
+
+def run(nw, nt):
+    nit = 50
+    spt = nit * nw // nt
+    if spt > MAX_SAMPLES_PER_THREAD:
+        nit = MAX_SAMPLES_PER_THREAD * nt // nw
+        if nit < MIN_NIT:
+            print(f'Skipping {nw}/{nt}, nit = {nit}')
+            return
+
+    print(f'Running {nw}/{nt}, nit = {nit}')
+
+    cmd = f"cat server-template.yaml | sed 's/nwalkers:.*/nwalkers: {nw}/'|sed 's/niters:.*/niters: {nit}/' | sed 's/threads:.*/threads: {nt}/'> server.yaml" 
+    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run("./run-one | tee out.txt", shell=True, check=True)
+    subprocess.run("cat out.txt | grep Stats >>loop-results.txt", shell=True, check=True)
+
+with open('out.dat', 'a') as f:
+    f.write('walkers\t\tthreads\t\tcpsall\t\tcpsbi\n')
+
+
+
+NW = [32, 64, 128, 256, 512, 1024]
+
+for nw in NW:
+    ntt = nw * 4
+    nt = 1
+    while nt <= ntt:
+        run(nw, nt)
+        nt = nt * 2
+
+
