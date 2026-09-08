@@ -1,0 +1,10 @@
+* AI-test2
+# VLA SCT/PST source-list format
+# Science targets used by the AI-test scheduling-block tests.
+# Coordinates are Equatorial J2000. Velocity information is intentionally blank.
+
+SN2021bmf;;Equatorial;J2000;16:33:29.416;-06:22:49.5;;;;N;
+SN2024rjw;;Equatorial;J2000;21:03:10.107;+20:45:07.58;;;;N;
+AT2025ulz;;Equatorial;J2000;15:51:54.201;+30:54:08.67;;;;N;
+SN2026gzf;;Equatorial;J2000;09:59:42.872;+00:25:06.38;;;;N;
+GW170817;;Equatorial;J2000;13:09:48.0850;-23:22:53.343;;;;N;

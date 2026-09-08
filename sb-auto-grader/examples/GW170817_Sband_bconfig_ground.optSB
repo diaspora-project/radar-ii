@@ -1,0 +1,25 @@
+VERSION; 7;
+
+ SRC-CAT; VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; GW170817_Sband; Dynamic; 8; 2024-05-08 01:16:58,2099-12-31 23:59:00; 10:20:00-11:25:01, ; 0.0; B; 445.0; 35.0; N; N; w=100.0,p=60.0; Late-time observations of GW170817. If possible, please execute the 8 repetitions within about one week of each other. We aim to co-add the 8 observations together. Thank you.; 
+
+  STD; SlewSatFree; J0559+5804; L16f2A; DUR; 0h 8m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; AttSetUp; J0559+5804; S16f3B; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Slew3C286; 1331+305=3C286; S16f3B; DUR; 0h 4m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; FluxCalLoop; 4; N; ;
+    STD; ; 1331+305=3C286; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalBP,CalFlux,; ;
+  LOOP-END;
+  LOOP-START; PhaseCalSlew; 4; N; ;
+    STD; ; J1258-2219; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-END;
+  LOOP-START; PaseCal2Target; 15; Y; ;
+    STD; ; J1258-2219; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817_7as; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

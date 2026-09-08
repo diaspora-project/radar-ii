@@ -1,0 +1,24 @@
+VERSION; 7;
+
+ SRC-CAT; VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; Sband_Deep_AT2025ulz_LST2_Nov25; Dynamic; 1; 2025-11-21 17:21:11,2099-12-31 23:59:00; 16:50:00-18:45:01, ; 0.0; A; -85.0; 35.0; N; N; w=100.0,p=60.0; Continued monitoring for LIGO/Virgo/KAGRA event S250818k.; 
+
+  STD; SlewSatFree; 1331+305=3C286; L-slew; DUR; 0h 7m 30s; CW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; AttSetUp; 1331+305=3C286; S16f3B; DUR; 0h 1m 0s; CW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; Slew2FluxCal; 1331+305=3C286; S16f3B; DUR; 0h 2m 0s; CW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; FluxCalLoop; 2; N; ;
+    STD; ; 1331+305=3C286; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalBP,CalFlux,; ;
+  LOOP-END;
+  LOOP-START; PhaseCalSlew; 4; N; ;
+    STD; ; J1602+3326; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-END;
+  LOOP-START; PaseCal2Target; 18; Y; ;
+    STD; ; J1602+3326; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; ; AT2025ulz; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; AT2025ulz; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;

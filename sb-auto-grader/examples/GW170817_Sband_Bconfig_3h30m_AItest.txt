@@ -1,0 +1,26 @@
+VERSION; 7;
+
+ SRC-CAT; AI-test, VLA;
+HDWR-CAT; NRAO Defaults;
+
+SCHED-BLOCK; GW170817_Sband_Bconfig_3h30m_S16f3B_AItest; Dynamic; 1; 2027-03-03 00:00:00,2027-06-14 23:59:00; 10:20:00-11:25:01, ; 0.0; B; 445.0; 35.0; N; N; S; GW170817 deep continuum imaging B configuration S band target RA 13h09m48.0850s Dec -23d22m53.343s phase calibrator J1258-2219 flux bandpass calibrator 3C286 total duration 3h30m, target on-source time 2h45m, resource S16f3B; 
+
+  STD; S-SlewSatFree; J0559+5804; S-slew; DUR; 0h 8m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; S-AttSetUp; J0559+5804; S16f3B; DUR; 0h 1m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  STD; S-Slew3C286; 1331+305=3C286; S16f3B; DUR; 0h 4m 0s; CCW; N; N; N; N; Y; N; N; SetAtnGain,; ;
+  LOOP-START; FluxCalLoop; 4; N; ;
+    STD; ; 1331+305=3C286; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalBP,CalFlux,CalDelay,; ;
+  LOOP-END;
+  LOOP-START; PhaseCalSlew; 4; N; ;
+    STD; ; J1258-2219; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; CalGain,; ;
+  LOOP-END;
+  LOOP-START; PhaseCal2Target; 15; Y; ;
+    STD; ; J1258-2219; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; CalGain,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 2m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+    STD; ; GW170817; S16f3B; DUR; 0h 1m 0s; ; N; N; N; N; Y; N; N; ObsTgt,; ;
+  LOOP-END;
+  STD; S-FinalPhaseCal; J1258-2219; S16f3B; DUR; 0h 1m 30s; ; N; N; N; N; Y; N; N; CalGain,; ;

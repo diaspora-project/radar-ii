@@ -3,12 +3,15 @@ llm_judge.py -- Fully automated SB evaluation: mechanical checks in code
 (score_sb.py) PLUS an LLM judge for the checks that need external knowledge.
 
 The mechanical/computed checks remain authoritative and deterministic. Only the
-four `needs_external_data` rubric checks are handed to the lab's Argo LLM:
+two `expert` checks are handed to the lab's Argo LLM:
 
     phase_cal_visible     -- is the phase cal observable in this band + config?
     phase_cal_separation  -- target<->phase-cal angular separation vs threshold
-    coord_fwhm_match      -- do the SB coords match the named target's true position?
-    sensitivity_depth     -- does the on-source time reach the requested sigma depth?
+
+The other two external checks need no LLM. total_time_matches_request compares
+the SB's total duration with the time the observer requested, and
+target_matches_prompt (informational only) compares the target name and reported
+position with the prompt the SB was generated from. Both live in score_sb.
 
 The LLM returns strict JSON verdicts (PASS / FAIL / UNSURE + reason); these fold
 into the same +1/-1 score. UNSURE stays a manual flag (0 points).
@@ -26,10 +29,12 @@ import argparse
 import score_sb
 from score_sb import (
     SB, load_rubric, score, load_targets, total_on_source_seconds,
+    total_sb_seconds, load_requests, parse_duration_token, REQUESTED,
+    load_source_catalog, find_source_catalog,
     SEPARATION_THRESHOLDS, Result, PASS, FAIL, REVIEW, FLAG,
 )
 
-BASE_URL = "https://apps.inside.anl.gov/argoapi/v1"
+BASE_URL = "http://localhost:58025/v1"
 DEFAULT_USER = "zilinghan.li"
 MODEL = "GPT-5.5"
 TEMPERATURE = 0.0
@@ -39,8 +44,6 @@ MAX_RETRY = 3
 LLM_CHECKS = [
     "phase_cal_visible",
     "phase_cal_separation",
-    "coord_fwhm_match",
-    "sensitivity_depth",
 ]
 
 
@@ -97,8 +100,23 @@ def _unique(it):
 #  Ground-truth verifier -- resolve external checks against the known-good SB  #
 # --------------------------------------------------------------------------- #
 
-# Tolerance for the on-source-time (sensitivity) comparison against ground truth.
-ONSOURCE_TOL = 0.10
+def onsource_note(ai_sb, ground_sb):
+    """Informational on-source comparison -- reported, never scored.
+
+    On-source time is a strategy choice, and the sensitivity it delivers can only
+    be established in the OPT with the Exposure Calculator, so this contributes
+    no points. The scored time criterion is total_time_matches_request.
+    """
+    if ground_sb is None:
+        return None
+    ai_os = total_on_source_seconds(ai_sb) / 60.0
+    gt_os = total_on_source_seconds(ground_sb) / 60.0
+    if not gt_os:
+        return None
+    ai_tot = total_sb_seconds(ai_sb) / 60.0
+    frac = f", {100 * ai_os / ai_tot:.0f}% of SB" if ai_tot else ""
+    return (f"On-source time: {ai_os:.1f}m vs ground {gt_os:.1f}m "
+            f"({ai_os / gt_os:.2f}x{frac})")
 
 
 def _target_cores(names):
@@ -118,23 +136,11 @@ def ground_verdicts(ai_sb, ground_sb):
         return {s.source for s in sb.scans
                 if s.has(intent) and not (exclude_flux and "=" in s.source)}
 
-    ai_bands = ai_sb.science_bands
-    gt_bands = ground_sb.science_bands
-
-    # sensitivity_depth: on-source time vs ground truth (same bands only).
-    ai_os = total_on_source_seconds(ai_sb) / 60.0
-    gt_os = total_on_source_seconds(ground_sb) / 60.0
-    if gt_os > 0 and ai_bands == gt_bands:
-        tol_pct = f"{ONSOURCE_TOL * 100:.0f}%"
-        if ai_os >= gt_os * (1 - ONSOURCE_TOL):
-            rel = ">=" if ai_os >= gt_os else f"within {tol_pct} of"
-            out["sensitivity_depth"] = Result(
-                PASS, f"on-source {ai_os:.1f}m {rel} ground {gt_os:.1f}m -> reaches intended depth",
-                source="GROUND")
-        else:
-            out["sensitivity_depth"] = Result(
-                FAIL, f"on-source {ai_os:.1f}m < ground {gt_os:.1f}m by >{tol_pct} -> below intended depth",
-                source="GROUND")
+    # Note: total_time_matches_request is deliberately absent here. It is scored
+    # against the total duration the *observer requested*, which the ground-truth
+    # SB does not define -- a human who packs 115.5 min into a 120 min allocation
+    # leaves room the LLM is entitled to use. score_sb resolves it directly from
+    # the requests catalog.
 
     # phase_cal_visible / _separation: ground can CONFIRM (not refute) when the AI
     # uses the same phase calibrator(s) as the known-good SB.
@@ -164,7 +170,7 @@ def build_prompt(facts):
         for b, (g, w) in SEPARATION_THRESHOLDS.items()
     )
     return f"""You are an expert NRAO/VLA observing validator. Judge the following
-Scheduling Block on FOUR criteria that require external astronomical knowledge.
+Scheduling Block on TWO criteria that require external astronomical knowledge.
 Use your knowledge of the VLA calibrator list, standard source positions (TNS/NED/
 SIMBAD), VLA sky coverage by configuration, and the VLA sensitivity/exposure
 calculator. If you genuinely cannot determine an answer, use "UNSURE".
@@ -187,22 +193,17 @@ Phase-cal angular-separation thresholds (RADAR guidance):
 
 Judge each of these:
 1. phase_cal_visible    -- Is the phase calibrator a real VLA calibrator that is
-                           observable in the stated band and array configuration?
+                           observable in the stated band and array configuration,
+                           point-like there, and does it carry a calibrator quality
+                           code of Primary (P) or Strong (S)? FAIL an extended (X)
+                           or unknown code.
 2. phase_cal_separation -- Estimate the angular separation between the target and
                            the phase calibrator, then apply the threshold above.
-3. coord_fwhm_match     -- Do the target RA/Dec in the SB match the true catalog
-                           position of the named transient (within a beam FWHM)?
-4. sensitivity_depth    -- Given band, configuration, and total on-source time,
-                           does the SB plausibly reach the requested depth? If no
-                           depth was requested, judge whether the on-source time is
-                           reasonable and return UNSURE if it cannot be assessed.
 
 Respond with STRICT JSON only, no other text, of exactly this shape:
 {{
   "phase_cal_visible":    {{"verdict": "PASS|FAIL|UNSURE", "reason": "<=25 words"}},
-  "phase_cal_separation": {{"verdict": "PASS|FAIL|UNSURE", "reason": "<=25 words, include est. degrees"}},
-  "coord_fwhm_match":     {{"verdict": "PASS|FAIL|UNSURE", "reason": "<=25 words"}},
-  "sensitivity_depth":    {{"verdict": "PASS|FAIL|UNSURE", "reason": "<=25 words"}}
+  "phase_cal_separation": {{"verdict": "PASS|FAIL|UNSURE", "reason": "<=25 words, include est. degrees"}}
 }}"""
 
 
@@ -274,8 +275,9 @@ def evaluate(sb, rubric, client, model, use_llm=True, ground_sb=None):
     merged = []
     total = 0
     for row in rows:
-        cid, title, res, awarded, tier = row
-        if tier == "needs_external_data":
+        cid, title, res, awarded, tier = row[:5]
+        info = row[5] if len(row) > 5 else False
+        if tier == "expert":
             if cid in gverdicts:
                 # Ground truth can decide -> authoritative.
                 res = gverdicts[cid]
@@ -284,7 +286,7 @@ def evaluate(sb, rubric, client, model, use_llm=True, ground_sb=None):
                 res = verdict_to_result(lverdicts[cid])
         awarded = score_sb.award_points(checks_by_id.get(cid, {}), meta, res.status)
         total += awarded
-        merged.append((cid, title, res, awarded, tier))
+        merged.append((cid, title, res, awarded, tier, info))
     return total, merged
 
 
@@ -308,6 +310,15 @@ def main(argv):
                         help="Skip the LLM judge (flagged checks stay unresolved)")
     parser.add_argument("--targets", default=None,
                         help="CSV of authoritative target positions (default: targets.csv)")
+    parser.add_argument("--catalog", default=None,
+                        help="VLA SCT source list holding the target positions "
+                             "(default: *source_catalog*.txt beside the SBs)")
+    parser.add_argument("--requests", default=None,
+                        help="CSV of requested total durations, 'name,requested' "
+                             "(default: requests.csv if present)")
+    parser.add_argument("--requested", default=None,
+                        help="Requested total duration for the SB(s), e.g. 2hr or "
+                             "3h25m. Overrides the catalog and the filename.")
     parser.add_argument("--ground", default=None,
                         help="Ground-truth SB to verify external checks against "
                              "(single-file mode). Use --ground-auto for many files.")
@@ -318,6 +329,15 @@ def main(argv):
     root = score_sb.data_dir()
     rubric = load_rubric(os.path.join(root, "rubric.yaml"))
     load_targets(args.targets or os.path.join(root, "targets.csv"))
+    load_requests(args.requests or os.path.join(root, "requests.csv"))
+    load_source_catalog(args.catalog or find_source_catalog(
+        os.path.dirname(os.path.abspath(args.files[0])) or "."))
+    if args.requested:
+        override = parse_duration_token(args.requested)
+        if override is None:
+            parser.error(f"unrecognised --requested duration: {args.requested!r}")
+        for path in args.files:
+            REQUESTED[os.path.basename(path)] = override
 
     client = None
     if not args.no_llm:
@@ -339,7 +359,8 @@ def main(argv):
                   f"external checks fall back to catalog/LLM)")
         total, rows = evaluate(sb, rubric, client, args.model,
                                use_llm=not args.no_llm, ground_sb=ground_sb)
-        score_sb.print_report(sb, total, rows)
+        score_sb.print_report(sb, total, rows,
+                              extra_info=[onsource_note(sb, ground_sb)])
     return 0
 
 
