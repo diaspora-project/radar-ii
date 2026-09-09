@@ -4,11 +4,15 @@ score_sb.py -- Score a VLA Scheduling Block against rubric.yaml.
 Usage:
     python score_sb.py <sb_file> [<sb_file> ...]
     python score_sb.py *.txt
+    python score_sb.py *.txt --review --review-file reviews.csv
 
-Scoring convention (from "Manual Scoring example_ Notes.docx"):
-    +1 per satisfied rule, -1 per violation.
-Checks in the `needs_external_data` tier cannot be verified from the file alone;
-they are FLAGGED for a human rather than scored.
+Scoring convention:
+    every rule is worth 1 point -- 1/1 when met, 0/1 when not met. Nothing scores
+    negative. A rule that no code path could decide raises a HUMAN REVIEW FLAG:
+    it takes the else branch (0) provisionally and a human rules it 1 or 0, so in
+    the final score every rule is either 1/1 or 0/1.
+Checks in the `expert` tier need astronomical judgement; they are answered from a
+ground-truth SB or the LLM judge, and raised for human review when neither can decide.
 
 The check registry (which checks to run, points, tier, provenance) lives in
 rubric.yaml.  The REFERENCE DATA below (hardware allowlist, config schedule,
@@ -119,6 +123,26 @@ TARGETS = {}
 # Phrases in the SB comment that waive the reference-pointing requirement.
 REFPOINT_WAIVERS = ["not required", "not needed", "no reference pointing",
                     "by request", "pointing observations are not required"]
+
+# Tolerance on total SB duration vs the observing time the user asked for.
+#
+# The check is ONE-SIDED: an SB that overruns its allocation cannot be executed
+# as scheduled and fails, while one that comes in under is valid (it merely
+# leaves time unused) and passes, with the shortfall shown in the report.
+#
+# Raise this if scoring the summed DUR fields, which ignore slew and settle time
+# and therefore understate the duration the OPT reports -- most for SBs built
+# from many short scans. Leave it at 0 when scoring an OPT-reported total (the
+# optional 'opt_total' column of requests.csv), which already includes overheads.
+TOTAL_TIME_TOL_SEC = 0
+
+# Requested total durations in seconds, keyed by SB basename (see load_requests).
+#
+# IMPORTANT: the requested time is the observer's input to the LLM and must come
+# from outside the SB. Do NOT read it from the SCHED-BLOCK comment -- the
+# generator writes its own "total duration approximately ..." there, so checking
+# against that would be circular and would pass unconditionally.
+REQUESTED = {}
 
 # Band prefixes, longest first so "Ka"/"Ku" win over "K".
 _BAND_PREFIXES = ["Ka", "Ku", "4P", "4_", "P", "L", "S", "C", "X", "K", "Q"]
@@ -325,6 +349,122 @@ def angular_sep_arcsec(ra1, dec1, ra2, dec2):
     return math.degrees(2 * math.asin(min(1.0, math.sqrt(a)))) * 3600.0
 
 
+# --------------------------------------------------------------------------- #
+#  The observing request, parsed from the prompt given to the LLM              #
+# --------------------------------------------------------------------------- #
+#
+# examples/<target>_<band>_prompt.txt holds the natural-language request the SB
+# was generated from. It is the authoritative statement of what the observer
+# asked for -- the target name, its position, and the total time -- so it, not
+# the SB, is what the SB should be checked against.
+
+_PROMPT_TARGET = re.compile(r"targeting source\s+([A-Za-z0-9+.\-]+)", re.I)
+_PROMPT_RA = re.compile(r"\bRA[:\s]\s*(\d{1,2}h\s*\d{1,2}m\s*[\d.]+s)", re.I)
+_PROMPT_DEC = re.compile(r"\bDec[:\s]\s*([+\-]?\d{1,2}d\s*\d{1,2}m\s*[\d.]+s)", re.I)
+_PROMPT_TIME = re.compile(r"total time of strictly\s+(.+?)(?=,|\.|\s+attempt)", re.I)
+
+# Parsed prompts, keyed by SB basename. None means "no prompt file found".
+PROMPTS = {}
+
+
+def parse_prompt(text):
+    """Pull target name, position, and requested total time out of a prompt."""
+    out = {"target": None, "ra": None, "dec": None, "total_seconds": None}
+    m = _PROMPT_TARGET.search(text)
+    if m:
+        out["target"] = m.group(1).rstrip(".,")
+    m = _PROMPT_RA.search(text)
+    if m:
+        out["ra"] = parse_ra_deg(m.group(1))
+    m = _PROMPT_DEC.search(text)
+    if m:
+        out["dec"] = parse_dec_deg(m.group(1))
+    m = _PROMPT_TIME.search(text)
+    if m:
+        t = m.group(1).lower()
+        for word, sym in (("hours", "h"), ("hour", "h"), ("minutes", "m"),
+                          ("minute", "m"), ("mins", "m"), ("min", "m")):
+            t = t.replace(word, sym)
+        out["total_seconds"] = parse_duration_token(t)
+    return out
+
+
+def find_prompt(sb_path):
+    """Locate the prompt paired with an SB: <target>_<band>_prompt.txt beside it."""
+    folder = os.path.dirname(os.path.abspath(sb_path)) or "."
+    toks = os.path.basename(sb_path).split("_")
+    if len(toks) < 2:
+        return None
+    cand = os.path.join(folder, f"{toks[0]}_{toks[1]}_prompt.txt")
+    return cand if os.path.isfile(cand) else None
+
+
+def prompt_for(sb):
+    """Parsed prompt for this SB, or None. Cached per SB name."""
+    if sb.name not in PROMPTS:
+        path = find_prompt(sb.path)
+        data = None
+        if path:
+            with open(path, encoding="utf-8") as fh:
+                data = parse_prompt(fh.read())
+        PROMPTS[sb.name] = data
+    return PROMPTS[sb.name]
+
+
+# --------------------------------------------------------------------------- #
+#  Source catalog (SCT) generated alongside the SB                             #
+# --------------------------------------------------------------------------- #
+#
+# The SB references sources by NAME only; the positions the OPT actually uses
+# live in the source catalog the observer loads alongside it. The generator now
+# emits that catalog too, so the declared position is checkable. Format is the
+# VLA SCT/PST source list, one source per line:
+#
+#   NAME;alias;Equatorial;J2000;HH:MM:SS.sss;+DD:MM:SS.ss;;;;N;
+#
+# '*' names the catalog, '#' is a comment.
+SOURCE_CATALOG = {}
+
+
+def load_source_catalog(path):
+    """Parse a VLA SCT source list into {name: (ra_deg, dec_deg)}."""
+    SOURCE_CATALOG.clear()
+    if not path or not os.path.isfile(path):
+        return SOURCE_CATALOG
+    with open(path, encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith(("*", "#")):
+                continue
+            f = [x.strip() for x in line.split(";")]
+            if len(f) < 6 or not f[0]:
+                continue
+            ra, dec = parse_ra_deg(f[4]), parse_dec_deg(f[5])
+            if ra is not None and dec is not None:
+                SOURCE_CATALOG[f[0]] = (ra, dec)
+    return SOURCE_CATALOG
+
+
+def find_source_catalog(folder):
+    """Locate a *source_catalog*.txt beside the SBs, or None."""
+    if not os.path.isdir(folder):
+        return None
+    for name in sorted(os.listdir(folder)):
+        if "source_catalog" in name.lower() and name.lower().endswith(".txt"):
+            return os.path.join(folder, name)
+    return None
+
+
+def catalog_position(name):
+    """Position of `name` in the source catalog, tolerating _Nas suffixes."""
+    if name in SOURCE_CATALOG:
+        return SOURCE_CATALOG[name]
+    for cat_name, pos in SOURCE_CATALOG.items():
+        if _same_source(cat_name, name):
+            return pos
+    return None
+
+
 def load_targets(path):
     """Load authoritative target positions from a CSV with columns name,ra,dec."""
     TARGETS.clear()
@@ -372,6 +512,104 @@ def total_on_source_seconds(sb):
             if sc and sc.has("ObsTgt"):
                 loop_stack[-1][1] += sc.duration
     return total
+
+
+def total_sb_seconds(sb):
+    """Total duration of every scan, counting each loop's repeat count.
+
+    This is the wall-clock length of the SB: setup, slews, calibration, and
+    target scans alike. Nested loops multiply.
+    """
+    total = 0
+    loop_stack = []
+    for lineno, kind, fields in sb.lines:
+        if kind == "LOOP-START":
+            loop_stack.append([_loop_repeat(fields), 0])   # [repeat, per-iter secs]
+        elif kind == "LOOP-END":
+            if loop_stack:
+                rep, secs = loop_stack.pop()
+                sub = rep * secs
+                if loop_stack:
+                    loop_stack[-1][1] += sub
+                else:
+                    total += sub
+        elif kind in ("STD", "PTG", "IP"):
+            sc = next((s for s in sb.scans if s.lineno == lineno), None)
+            if sc is None:
+                continue
+            if loop_stack:
+                loop_stack[-1][1] += sc.duration
+            else:
+                total += sc.duration
+    return total
+
+
+def parse_duration_token(text):
+    """'2hr' / '3h25m' / '1h' / '90m' -> seconds, or None if unrecognised."""
+    if not text:
+        return None
+    t = str(text).strip().lower().replace(" ", "")
+    m = re.fullmatch(r"(?:(\d+)h(?:r|rs)?)?(?:(\d+)m(?:in)?)?(?:(\d+)s)?", t)
+    if not m or not any(m.groups()):
+        return None
+    h, mi, s = (int(g) if g else 0 for g in m.groups())
+    return h * 3600 + mi * 60 + s
+
+
+def requested_seconds(sb):
+    """Requested total duration for this SB, or None if unknown.
+
+    Priority: the prompt the SB was generated from ("total time of strictly
+    ..."), then the requests catalog (load_requests), then a duration token in
+    the filename, e.g. 'SN2026gzf_Cband_Aconfig_1hr_AItest.txt'. Never the SB's
+    own comment (see the REQUESTED note above).
+    """
+    pr = prompt_for(sb)
+    if pr and pr.get("total_seconds"):
+        return pr["total_seconds"]
+    if sb.name in REQUESTED:
+        return REQUESTED[sb.name]
+    stem = os.path.splitext(sb.name)[0]
+    for tok in stem.split("_"):
+        secs = parse_duration_token(tok)
+        if secs:
+            return secs
+    return None
+
+
+def _duration_field(raw):
+    """A duration token ('2hr', '3h25m') or plain minutes -> seconds, else None."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    secs = parse_duration_token(raw)
+    if secs is not None:
+        return secs
+    try:
+        return float(raw) * 60.0
+    except ValueError:
+        return None
+
+
+def load_requests(path):
+    """Load requested durations from a CSV of 'name,requested' rows.
+
+    'name' is the SB filename and 'requested' the time the observer asked for,
+    as a duration token ('2hr', '3h25m') or plain minutes. Only used when no
+    ground-truth SB is available. Blank lines and '#' comments are skipped.
+    """
+    REQUESTED.clear()
+    if not path or not os.path.isfile(path):
+        return REQUESTED
+    with open(path, encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            name = (row.get("name") or "").strip()
+            if not name or name.startswith("#"):
+                continue
+            req = _duration_field(row.get("requested"))
+            if req is not None:
+                REQUESTED[name] = req
+    return REQUESTED
 
 
 # --------------------------------------------------------------------------- #
@@ -527,36 +765,115 @@ def c_highfreq_refpointing(sb):
         return Result(WAIVED, "no ref pointing, but waived in SB comment")
     return Result(FAIL, f"{', '.join(sorted(hf))} SB missing X-band reference pointing")
 
-def c_coord_fwhm_match(sb):
-    """Target's intended pointing vs authoritative position, within one beam FWHM.
+def c_target_matches_prompt(sb):
+    """Target named and positioned as the prompt asked for.
 
-    Deterministic when the target is in targets.csv; otherwise FLAG so the LLM
-    judge (or a human) can take over.
+    The SB references its target by NAME only; the position the OPT uses comes
+    from the source catalog generated alongside the SB. So this check resolves
+    the SB's target name in that catalog and compares the catalogued position
+    with the one the prompt specified, passing when the two agree to within the
+    synthesized-beam FWHM for the SB's highest-frequency band and configuration.
+
+    The RA/Dec written into the SCHED-BLOCK comment is decorative -- it has no
+    effect on where the telescope points -- so a disagreement there is reported
+    in the detail but never decides the verdict.
     """
-    targets = [s.source for s in sb.scans if s.has("ObsTgt")]
-    tname = targets[0] if targets else None
-    if not TARGETS:
-        return Result(FLAG, "no targets.csv loaded")
-    if not tname or tname not in TARGETS:
-        return Result(FLAG, f"target '{tname}' not in targets.csv")
-    nom_ra, nom_dec = TARGETS[tname]
-    sb_ra, sb_dec = sb_target_coords(sb)
-    if None in (nom_ra, nom_dec):
-        return Result(FLAG, f"no valid position for '{tname}' in targets.csv")
-    if None in (sb_ra, sb_dec):
-        return Result(FLAG, "no target RA/Dec found in SB comment")
-    sep = angular_sep_arcsec(nom_ra, nom_dec, sb_ra, sb_dec)
-    # Strictest beam among the SB's science bands (highest frequency = smallest).
+    pr = prompt_for(sb)
+    if not pr:
+        return Result(FLAG, "no prompt file found for this SB")
+    if not SOURCE_CATALOG:
+        return Result(FLAG, "no source catalog loaded (use --catalog)")
+
+    want = pr.get("target")
+    got = [s_.source for s_ in sb.scans if s_.has("ObsTgt")]
+    tname = got[0] if got else None
+    if not tname:
+        return Result(FAIL, "SB has no target scan", source="PROMPT")
+    if want and not _same_source(want, tname):
+        return Result(FAIL, f"prompt asked for '{want}', SB targets '{tname}'",
+                      source="PROMPT")
+
+    pos = catalog_position(tname)
+    if pos is None:
+        return Result(FAIL, f"target '{tname}' has no source-catalog entry",
+                      source="PROMPT")
+    if pr.get("ra") is None or pr.get("dec") is None:
+        return Result(FLAG, f"'{tname}' in catalog, but prompt states no position")
+
+    sep = angular_sep_arcsec(pr["ra"], pr["dec"], pos[0], pos[1])
     fwhms = [BEAM_FWHM_ARCSEC[b][sb.config]
              for b in sb.science_bands
              if b in BEAM_FWHM_ARCSEC and sb.config in BEAM_FWHM_ARCSEC.get(b, {})]
+
+    # The SCHED-BLOCK comment position is advisory; note it, never score it.
+    note = ""
+    sb_ra, sb_dec = sb_target_coords(sb)
+    if None in (sb_ra, sb_dec):
+        note = "; SB comment states no position"
+    else:
+        csep = angular_sep_arcsec(pr["ra"], pr["dec"], sb_ra, sb_dec)
+        if not fwhms or csep > min(fwhms):
+            note = f"; note: SCHED-BLOCK comment position differs from prompt by {csep:.2f}\""
+
     if not fwhms:
-        return Result(REVIEW, f"offset {sep:.2f}\" but no beam size for band/config",
-                      source="CATALOG")
+        return Result(REVIEW,
+                      f"{tname}: catalog offset {sep:.3f}\" but no beam size "
+                      f"for band/config{note}", source="PROMPT")
     fwhm = min(fwhms)
     if sep <= fwhm:
-        return Result(PASS, f"{tname}: offset {sep:.3f}\" <= beam {fwhm}\"", source="CATALOG")
-    return Result(FAIL, f"{tname}: offset {sep:.2f}\" > beam {fwhm}\"", source="CATALOG")
+        return Result(PASS,
+                      f"{tname}: catalog position matches prompt, offset "
+                      f"{sep:.3f}\" <= beam {fwhm}\"{note}", source="PROMPT")
+    return Result(FAIL,
+                  f"{tname}: catalog position off by {sep:.2f}\" > beam "
+                  f"{fwhm}\"{note}", source="PROMPT")
+
+
+def _same_source(a, b):
+    """Compare source names ignoring case, the SN/AT prefix, and _Nas suffixes.
+
+    'AT2025ulz' == 'SN2025ulz' == 'SN2025ulz_1as'; 'GW170817' == 'GW170817_7as'.
+    """
+    def norm(n):
+        n = re.sub(r"_\d+as$", "", n.strip(), flags=re.I)
+        n = re.sub(r"^(SN|AT|GW)", "", n, flags=re.I)
+        return n.lower()
+    return norm(a) == norm(b)
+
+
+def c_total_time_matches_request(sb):
+    """Total SB duration vs the observing time the user requested.
+
+    The observer derives a total allocation from a sensitivity calculation and
+    asks the LLM for it; the SB has to fit. How that block is divided between
+    overheads and target scans is a strategy choice and is reported, not scored
+    (see onsource_note in llm_judge.py).
+
+    One-sided: overrunning the allocation fails, since the SB cannot then run as
+    scheduled; coming in under passes, since the SB is still executable and only
+    leaves time unused.
+
+    FLAGs when the requested duration is unknown, so the check falls through to
+    the LLM/manual path rather than silently passing.
+    """
+    req = requested_seconds(sb)
+    if not req:
+        return Result(FLAG, "requested duration unknown (use --requested or requests.csv)")
+    # Sum of the declared DUR fields. This is a LOWER BOUND: it omits the slew
+    # and settle time the OPT adds at every source change, and the gap grows
+    # with the number of scans.
+    got = total_sb_seconds(sb)
+    if not got:
+        return Result(FLAG, "cannot measure SB duration")
+    delta = got - req
+    summary = f"SB {got/60:.1f}m vs requested {req/60:.1f}m ({delta:+.0f}s)"
+    if delta > TOTAL_TIME_TOL_SEC:
+        over = f" by >{TOTAL_TIME_TOL_SEC:.0f}s" if TOTAL_TIME_TOL_SEC else ""
+        return Result(FAIL, f"{summary}, overruns allocation{over}", source="REQUEST")
+    if delta < 0:
+        return Result(PASS, f"{summary}, fits allocation with {-delta:.0f}s unused",
+                      source="REQUEST")
+    return Result(PASS, f"{summary}, fits allocation", source="REQUEST")
 
 
 def c_cycle_time(sb):
@@ -618,7 +935,8 @@ CHECKS = {
     "config_matches_date": c_config_matches_date,
     "highfreq_refpointing": c_highfreq_refpointing,
     "cycle_time": c_cycle_time,
-    "coord_fwhm_match": c_coord_fwhm_match,
+    "target_matches_prompt": c_target_matches_prompt,
+    "total_time_matches_request": c_total_time_matches_request,
 }
 
 # Symbols for the report.
@@ -629,14 +947,16 @@ def award_points(chk, meta, status):
     """Points a check contributes to the score, given its verdict.
 
     Configured entirely from rubric.yaml:
-      PASS  -> chk['points']                       (default 1)
+      PASS  -> chk['points']                       (default 1, so 1/1)
       FAIL  -> chk['fail_points'] if set,
-               else meta['fail_default'] if set,
-               else -chk['points']                 (the classic +1/-1 behaviour)
-      other -> 0   (flag / review / waived never affect the score)
+               else meta['fail_default'] if set,   (the rubric ships 0, so 0/1)
+               else -chk['points']                 (legacy +1/-1 behaviour)
+      other -> 0   provisionally: the verdict is unresolved, so the check raises a
+               HUMAN REVIEW FLAG and a human rules it 1 or 0 before the score is
+               final (see apply_review_decisions / prompt_human_reviews).
 
-    So to make an unmet rule score 0 instead of -1, set 'fail_points: 0' on that
-    rule, or 'fail_default: 0' in the rubric's meta block to apply it to all rules.
+    The shipped rubric sets 'fail_default: 0'. Setting a rule's own 'fail_points'
+    overrides it; dropping both restores the old +1/-1 scoring.
     """
     pts = chk.get("points", 1)
     if status == PASS:
@@ -659,12 +979,156 @@ def score(sb, rubric):
         tier = chk.get("tier", "mechanical")
         fn = CHECKS.get(cid)
         if fn is None:
-            res = Result(FLAG, "needs external data / manual review")
+            res = Result(FLAG, "needs expert judgement / manual review")
         else:
             res = fn(sb)
         awarded = award_points(chk, meta, res.status)
         total += awarded
-        rows.append((cid, chk.get("title", cid), res, awarded, tier))
+        rows.append((cid, chk.get("title", cid), res, awarded, tier,
+                     is_informational(chk, meta), chk.get("points", 1)))
+    return total, rows
+
+
+def is_informational(chk, meta):
+    """True when a check scores zero whether it is met or not.
+
+    Such checks are reported for a human to read but are not one of the scored
+    criteria, so they are listed separately and excluded from the pass/fail/
+    flagged tallies.
+    """
+    if chk.get("points", 1) != 0:
+        return False
+    fail = chk.get("fail_points", meta.get("fail_default", -chk.get("points", 1)))
+    return fail == 0
+
+
+# --------------------------------------------------------------------------- #
+#  Human review                                                               #
+# --------------------------------------------------------------------------- #
+#
+# A verdict that is neither PASS nor FAIL is not a third score. The check raises a
+# HUMAN REVIEW FLAG, takes the else branch (0) for now, and waits for a human to
+# rule it 1 or 0. Rulings can be recorded in a CSV (--review-file) so a rerun
+# reproduces the same final score without asking again.
+
+HUMAN = "HUMAN"
+
+
+def needs_human_review(res):
+    """True when a verdict is neither met nor unmet, so a human has to decide."""
+    return res.status not in (PASS, FAIL)
+
+
+def human_result(decision, note=""):
+    """Turn a human 1/0 ruling into an ordinary met/not-met verdict."""
+    status = PASS if int(decision) == 1 else FAIL
+    return Result(status, note or "ruled by human review", source=HUMAN)
+
+
+def load_review_decisions(path):
+    """Read recorded rulings from CSV: sb_name,check_id,score,note."""
+    out = {}
+    if not path or not os.path.isfile(path):
+        return out
+    with open(path, newline="", encoding="utf-8") as fh:
+        for row in csv.reader(fh):
+            if len(row) < 3 or row[0].lstrip().startswith("#"):
+                continue
+            sb_name, cid, dec = row[0].strip(), row[1].strip(), row[2].strip()
+            if sb_name.lower() in ("sb_name", "sb"):        # header line
+                continue
+            note = row[3].strip() if len(row) > 3 else ""
+            if dec in ("0", "1"):
+                out[(sb_name, cid)] = (int(dec), note)
+    return out
+
+
+def save_review_decision(path, sb_name, cid, decision, note):
+    """Append one ruling so the next run reuses it instead of re-asking."""
+    if not path:
+        return
+    is_new = not os.path.exists(path)
+    with open(path, "a", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        if is_new:
+            w.writerow(["sb_name", "check_id", "score", "note"])
+        w.writerow([sb_name, cid, decision, note])
+
+
+def apply_review_decisions(sb_name, rows, rubric, decisions):
+    """Fold recorded human rulings into rows. Returns (total, rows)."""
+    if not decisions:
+        return sum(r[3] for r in rows), rows
+    meta = rubric.get("meta", {})
+    checks_by_id = {c["id"]: c for c in rubric["checks"]}
+    out = []
+    for row in rows:
+        cid, title, res, awarded, tier = row[:5]
+        rest = tuple(row[5:])
+        if needs_human_review(res) and (sb_name, cid) in decisions:
+            dec, note = decisions[(sb_name, cid)]
+            res = human_result(dec, note)
+            awarded = award_points(checks_by_id.get(cid, {}), meta, res.status)
+        out.append((cid, title, res, awarded, tier) + rest)
+    return sum(r[3] for r in out), out
+
+
+def pending_reviews(rows):
+    """Scored checks still waiting on a human ruling."""
+    return [r for r in rows
+            if not (len(r) > 5 and r[5]) and needs_human_review(r[2])]
+
+
+def prompt_human_reviews(sb_name, rows, rubric, save_path=None, stream=None):
+    """Ask a human to rule 1/0 on each unresolved check. Returns the rulings."""
+    stream = stream or sys.stdin
+    pending = pending_reviews(rows)
+    if not pending:
+        return {}
+    print("=" * 78)
+    print(f"HUMAN REVIEW -- {sb_name}: {len(pending)} check(s) need a ruling")
+    print("  Answer 1 (met) or 0 (not met); text after the digit is kept as a note.")
+    print("  Enter alone leaves the check unresolved, which scores 0.")
+    print("-" * 78)
+    ruled = {}
+    for i, row in enumerate(pending, 1):
+        cid, title, res = row[0], row[1], row[2]
+        print(f"  [{i}/{len(pending)}] {cid}")
+        print(f"        {title}")
+        print(f"        automatic verdict: {SYMBOL[res.status]}"
+              + (f" -- {res.detail}" if res.detail else ""))
+        while True:
+            sys.stdout.write("        score 1 or 0 (+ optional note): ")
+            sys.stdout.flush()
+            line = stream.readline()
+            if not line:                       # EOF: nothing more to read
+                print()
+                print("=" * 78)
+                print()
+                return ruled
+            line = line.strip()
+            if not line:                       # left unresolved on purpose
+                break
+            tok, _, note = line.partition(" ")
+            if tok in ("0", "1"):
+                note = note.strip()
+                ruled[(sb_name, cid)] = (int(tok), note)
+                save_review_decision(save_path, sb_name, cid, tok, note)
+                break
+            print("        please answer 1 or 0 (or Enter to leave it unresolved)")
+    print("=" * 78)
+    print()
+    return ruled
+
+
+def review_sb(sb_name, total, rows, rubric, decisions=None, interactive=False,
+              save_path=None, stream=None):
+    """Apply recorded rulings, then optionally ask about whatever is still open."""
+    total, rows = apply_review_decisions(sb_name, rows, rubric, decisions or {})
+    if interactive and pending_reviews(rows):
+        new = prompt_human_reviews(sb_name, rows, rubric, save_path, stream)
+        if new:
+            total, rows = apply_review_decisions(sb_name, rows, rubric, new)
     return total, rows
 
 
@@ -675,13 +1139,13 @@ def _source_tag(tier, res):
     if tier == "mechanical":
         return "AUTO"                # deterministic code check
     if tier == "computed":
-        return "CALC"               # computed vs guidance (e.g. cycle time)
-    return "MANUAL"                  # external check left unresolved
+        return "CALC"               # deterministic comparison (cycle time, duration)
+    return "MANUAL"                  # expert check left unresolved
 
 
-def print_report(sb, total, rows):
+def print_report(sb, total, rows, extra_info=None, stage=""):
     print("=" * 78)
-    print(f"SB: {sb.name}")
+    print(f"SB: {sb.name}" + (f"   [{stage}]" if stage else ""))
     meta = []
     if sb.config:
         meta.append(f"config {sb.config}")
@@ -692,21 +1156,44 @@ def print_report(sb, total, rows):
     if meta:
         print("    " + ", ".join(meta))
     print("    source: AUTO=code  CALC=computed  CATALOG=targets.csv  "
-          "GROUND=ground-truth  LLM=model  MANUAL=needs human")
+          "REQUEST=requested time  GROUND=ground-truth  LLM=model  HUMAN=human review  "
+          "MANUAL=needs human")
     print("-" * 78)
-    for row in rows:
+    scored = [r for r in rows if not (len(r) > 5 and r[5])]
+    info = [r for r in rows if len(r) > 5 and r[5]]
+    for row in scored:
         title, res, awarded, tier = row[1], row[2], row[3], row[4]
-        sign = f"{awarded:+d}" if awarded else "  "
+        pts = row[6] if len(row) > 6 else 1
+        mark = "  <-- HUMAN REVIEW" if needs_human_review(res) else ""
         detail = f"  -- {res.detail}" if res.detail else ""
         src = _source_tag(tier, res)
-        print(f"  {src:<7} [{SYMBOL[res.status]}] {sign:>3}  {title}{detail}")
+        print(f"  {src:<7} [{SYMBOL[res.status]}] {awarded}/{pts}  {title}{detail}{mark}")
     print("-" * 78)
-    passes = sum(1 for r in rows if r[2].status == PASS)
-    fails = sum(1 for r in rows if r[2].status == FAIL)
-    # "Flagged" = genuinely unresolved (still needs a human), not merely external-tier.
-    flagged = sum(1 for r in rows if r[2].status in (FLAG, REVIEW))
-    print(f"  SCORE: {total:+d}   ({passes} pass, {fails} fail, "
-          f"{flagged} flagged for manual review)")
+    passes = sum(1 for r in scored if r[2].status == PASS)
+    fails = sum(1 for r in scored if r[2].status == FAIL)
+    pending = pending_reviews(rows)
+    max_total = sum((r[6] if len(r) > 6 else 1) for r in scored)
+    label = "SCORE (provisional)" if pending else "SCORE"
+    print(f"  {label}: {total} / {max_total}   ({passes} met, {fails} not met, "
+          f"{len(pending)} awaiting human review)")
+    if pending:
+        print("-" * 78)
+        print(f"  HUMAN REVIEW FLAG -- {len(pending)} check(s) could not be decided "
+              f"automatically.")
+        print("  Each scores 0 until a human rules it 1 (met) or 0 (not met):")
+        for row in pending:
+            print(f"    - {row[0]}: {row[1]}")
+        print("  Resolve them with:  --review   (record them with --review-file FILE)")
+    extra_info = [x for x in (extra_info or []) if x]
+    if info or extra_info:
+        print("-" * 78)
+        print("  INFORMATIONAL (not scored, not counted above):")
+        for row in info:
+            title, res = row[1], row[2]
+            detail = f"  -- {res.detail}" if res.detail else ""
+            print(f"    [{SYMBOL[res.status]}] {title}{detail}")
+        for line in extra_info:
+            print(f"    {line}")
     print("=" * 78)
     print()
 
@@ -737,6 +1224,35 @@ def main(argv):
         del args[i:i + 2]
     load_targets(targets_path)
 
+    # Optional "--requests PATH"; otherwise auto-load requests.csv if present.
+    requests_path = os.path.join(root, "requests.csv")
+    if "--requests" in args:
+        i = args.index("--requests")
+        requests_path = args[i + 1]
+        del args[i:i + 2]
+    load_requests(requests_path)
+
+    # Optional "--review" / "--review-file PATH": human rulings on flagged checks.
+    interactive = "--review" in args
+    if interactive:
+        args.remove("--review")
+    review_path = None
+    if "--review-file" in args:
+        i = args.index("--review-file")
+        review_path = args[i + 1]
+        del args[i:i + 2]
+    decisions = load_review_decisions(review_path)
+
+    # Optional "--catalog PATH"; otherwise look for one beside the SB files.
+    catalog_path = None
+    if "--catalog" in args:
+        i = args.index("--catalog")
+        catalog_path = args[i + 1]
+        del args[i:i + 2]
+    if catalog_path is None and args:
+        catalog_path = find_source_catalog(os.path.dirname(os.path.abspath(args[0])) or ".")
+    load_source_catalog(catalog_path)
+
     files = args
     if not files:
         print(__doc__)
@@ -747,7 +1263,13 @@ def main(argv):
             continue
         sb = SB(path)
         total, rows = score(sb, rubric)
+        total, rows = apply_review_decisions(sb.name, rows, rubric, decisions)
         print_report(sb, total, rows)
+        if interactive and pending_reviews(rows):
+            new_rulings = prompt_human_reviews(sb.name, rows, rubric, review_path)
+            if new_rulings:
+                total, rows = apply_review_decisions(sb.name, rows, rubric, new_rulings)
+                print_report(sb, total, rows, stage="after human review")
     return 0
 
 

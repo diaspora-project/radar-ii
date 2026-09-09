@@ -14,10 +14,12 @@ target_matches_prompt (informational only) compares the target name and reported
 position with the prompt the SB was generated from. Both live in score_sb.
 
 The LLM returns strict JSON verdicts (PASS / FAIL / UNSURE + reason); these fold
-into the same +1/-1 score. UNSURE stays a manual flag (0 points).
+into the same 1/0 score. UNSURE resolves nothing: the check raises a HUMAN REVIEW
+FLAG, scores 0 provisionally, and a human rules it 1 or 0 (--review).
 
 Usage:
     python llm_judge.py <sb_file> [<sb_file> ...] [--model GPT-5.5] [--no-llm]
+    python llm_judge.py <sb_file> --ground-auto --review --review-file reviews.csv
 """
 
 import os
@@ -32,6 +34,8 @@ from score_sb import (
     total_sb_seconds, load_requests, parse_duration_token, REQUESTED,
     load_source_catalog, find_source_catalog,
     SEPARATION_THRESHOLDS, Result, PASS, FAIL, REVIEW, FLAG,
+    apply_review_decisions, load_review_decisions, prompt_human_reviews,
+    pending_reviews,
 )
 
 BASE_URL = "http://localhost:58025/v1"
@@ -266,9 +270,10 @@ def evaluate(sb, rubric, client, model, use_llm=True, ground_sb=None):
     gverdicts = ground_verdicts(sb, ground_sb) if ground_sb is not None else {}
     lverdicts = judge(sb, client, model) if (use_llm and client is not None) else None
 
-    # Point values come from rubric.yaml (see score_sb.award_points): PASS awards
-    # +points; FAIL awards the rule's fail_points / the rubric's fail_default / -points;
-    # anything unresolved (flag/review/waived) awards 0.
+    # Point values come from rubric.yaml (see score_sb.award_points): a met rule
+    # awards its points (1/1), an unmet rule awards fail_points / the rubric's
+    # fail_default (0/1); anything still unresolved awards 0 provisionally and is
+    # raised as a HUMAN REVIEW FLAG.
     checks_by_id = {c["id"]: c for c in rubric["checks"]}
     meta = rubric.get("meta", {})
 
@@ -277,6 +282,7 @@ def evaluate(sb, rubric, client, model, use_llm=True, ground_sb=None):
     for row in rows:
         cid, title, res, awarded, tier = row[:5]
         info = row[5] if len(row) > 5 else False
+        pts = row[6] if len(row) > 6 else checks_by_id.get(cid, {}).get("points", 1)
         if tier == "expert":
             if cid in gverdicts:
                 # Ground truth can decide -> authoritative.
@@ -286,7 +292,7 @@ def evaluate(sb, rubric, client, model, use_llm=True, ground_sb=None):
                 res = verdict_to_result(lverdicts[cid])
         awarded = score_sb.award_points(checks_by_id.get(cid, {}), meta, res.status)
         total += awarded
-        merged.append((cid, title, res, awarded, tier, info))
+        merged.append((cid, title, res, awarded, tier, info, pts))
     return total, merged
 
 
@@ -324,10 +330,18 @@ def main(argv):
                              "(single-file mode). Use --ground-auto for many files.")
     parser.add_argument("--ground-auto", action="store_true",
                         help="Auto-find each file's *_ground.optSB and verify against it")
+    parser.add_argument("--review", action="store_true",
+                        help="Interactively rule 1/0 on every check that raised a "
+                             "HUMAN REVIEW FLAG, then print the final score")
+    parser.add_argument("--review-file", default=None,
+                        help="CSV of human rulings (sb_name,check_id,score,note). "
+                             "Read before scoring and appended to by --review, so a "
+                             "rerun reproduces the same final score without asking")
     args = parser.parse_args(argv[1:])
 
     root = score_sb.data_dir()
     rubric = load_rubric(os.path.join(root, "rubric.yaml"))
+    decisions = load_review_decisions(args.review_file)
     load_targets(args.targets or os.path.join(root, "targets.csv"))
     load_requests(args.requests or os.path.join(root, "requests.csv"))
     load_source_catalog(args.catalog or find_source_catalog(
@@ -359,8 +373,15 @@ def main(argv):
                   f"external checks fall back to catalog/LLM)")
         total, rows = evaluate(sb, rubric, client, args.model,
                                use_llm=not args.no_llm, ground_sb=ground_sb)
-        score_sb.print_report(sb, total, rows,
-                              extra_info=[onsource_note(sb, ground_sb)])
+        total, rows = apply_review_decisions(sb.name, rows, rubric, decisions)
+        extra = [onsource_note(sb, ground_sb)]
+        score_sb.print_report(sb, total, rows, extra_info=extra)
+        if args.review and pending_reviews(rows):
+            new_rulings = prompt_human_reviews(sb.name, rows, rubric, args.review_file)
+            if new_rulings:
+                total, rows = apply_review_decisions(sb.name, rows, rubric, new_rulings)
+                score_sb.print_report(sb, total, rows, extra_info=extra,
+                                      stage="after human review")
     return 0
 
 

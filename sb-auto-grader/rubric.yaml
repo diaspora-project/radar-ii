@@ -1,16 +1,31 @@
 # VLA Scheduling-Block (SB) scoring rubric
 # =========================================
-# Scoring convention (matches the manual notes): +1 per satisfied rule, -1 per violation.
-# Each check has a `tier`:
-#   mechanical -> fully auto-checked from the SB file
-#   computed -> auto-computed but advisory (thresholds are guidance, not hard fails)
-#   needs_external_data-> cannot be verified from the file alone; the scorer FLAGS it for a human
+# Scoring convention: every rule is worth 1 point -- 1/1 when it is met, 0/1 when it
+# is not. There is no negative score. A rule that cannot be decided automatically
+# raises a HUMAN REVIEW FLAG: it takes the else branch (0) provisionally and a human
+# then rules it 1 or 0, so every rule ends up either 1/1 or 0/1 in the final score.
+# Each check has a `tier`, describing HOW it is resolved:
+#   mechanical -> read straight off the SB file (syntax, structure, allowed names)
+#   computed   -> a deterministic comparison against a reference value: the prompt
+#                 the SB was generated from, or an NRAO guidance table
+#   expert     -> needs astronomical judgement (the VLA calibrator database, true
+#                 source positions); answered from the ground-truth SB or the LLM
+#                 judge, and raised as a HUMAN REVIEW FLAG when neither can decide
+#
+# Whether a check is advisory is independent of its tier and is set by points:
+# `points: 0` with `fail_points: 0` makes a check informational -- reported for a
+# human, excluded from the score and from the pass/fail tallies.
 # The reference tables (hardware allowlist, config schedule, cycle times, ...) live in
 # score_sb.py under the "REFERENCE DATA" section and are easy to edit there.
 
 meta:
   name: VLA SB scoring rubric
-  scoring: "+1 per satisfied rule, -1 per violation; flagged checks need manual review"
+  scoring: "1/1 per satisfied rule, 0/1 per violation; a rule that cannot be decided
+    automatically raises a HUMAN REVIEW FLAG, scores 0 provisionally, and is ruled
+    1 or 0 by a human before the score is final"
+  # Applies to every rule unless it sets its own fail_points: an unmet rule scores 0,
+  # never -1.
+  fail_default: 0
   sources: "RADAR ChatGPT SB creation investigation.docx; Manual Scoring example_ Notes.docx"
 
 checks:
@@ -118,24 +133,32 @@ checks:
 
   - id: phase_cal_visible
     title: "Phase calibrator observable in chosen band and array config"
-    tier: needs_external_data
+    tier: expert
     points: 1
     source: "Notes comment 9; RADAR sec5"
 
   - id: phase_cal_separation
     title: "Phase-cal angular separation within band-dependent threshold"
-    tier: needs_external_data
+    tier: expert
     points: 1
     source: "RADAR sec5 separation table"
 
-  - id: coord_fwhm_match
-    title: "Target/cal RA/Dec within synthesized-beam FWHM of nominal position"
-    tier: needs_external_data
+  - id: target_matches_prompt
+    title: "Target name resolves in the source catalog at the prompted position"
+    tier: computed
     points: 1
-    source: "RADAR Tab1; sec1 truth table"
+    source: >-
+      O'Dwyer 2026: the SB references its target by NAME only, and the position
+      the OPT uses comes from the source catalog (SCT) now generated alongside
+      the SB. Resolving the name in that catalog and comparing the catalogued
+      position with the prompt makes this a real pointing check. The RA/Dec in
+      the SCHED-BLOCK comment is decorative and is reported, never scored.
 
-  - id: sensitivity_depth
-    title: "On-source time reaches requested sigma depth (Exposure Calculator)"
-    tier: needs_external_data
+  - id: total_time_matches_request
+    title: "Total SB duration matches the requested observing time"
+    tier: computed
     points: 1
-    source: "RADAR Tab1; sec1"
+    source: >-
+      Corsi review (RADAR II sec4.2): the requested total is the quantity with a
+      well-defined correct value; the split between overheads and on-source time
+      is observing strategy and is reported, not scored.

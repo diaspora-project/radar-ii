@@ -1,0 +1,22 @@
+name,requested
+# Total observing time the observer asked the LLM for, per SB.
+#
+# This is only the FALLBACK reference for the total_time_matches_request check.
+# When a ground-truth SB is available, the check compares the LLM SB's total
+# duration against the ground truth's instead; this file matters for a new
+# transient where no ground-truth SB exists.
+#
+# IMPORTANT: this must be the observer's REQUEST, not a number read back out of
+# the generated SB. The SB's SCHED-BLOCK comment carries the model's own
+# "total duration approximately ..." self-report; scoring against that would be
+# circular and would pass unconditionally.
+#
+# 'requested' accepts a duration token (2hr, 3h25m, 90m) or plain minutes.
+# Rows are keyed by SB filename. An unlisted SB falls back to a duration token
+# in the filename (e.g. "..._1hr_AItest.txt"), then to a FLAG for manual review.
+GW170817_Sband_Bconfig_3h30m_AItest.txt,3h30m
+SN2021bmf_SXKu_Aconfig_2hr_AItest.txt,2hr
+SN2024rjw_Xband_Aconfig_2hr_AItest.txt,2hr
+SN2025ulz_Kuband_3h25m_AItest.txt,3h25m
+SN2025ulz_Sband_Aconfig_3hr_AItest.txt,3hr
+SN2026gzf_Cband_Aconfig_1hr_AItest.txt,1hr
